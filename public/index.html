@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Setup Tool</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="password-container">
+        <h2>Enter the password to continue</h2>
+        <input type="password" id="password" placeholder="Enter the password">
+        <button onclick="checkPassword()">Confirm</button>
+    </div>
+
+    <div id="menu" class="hidden">
+        <h2>Menu Auto Setup</h2>
+        <button onclick="runTask(1)">Tải Pi Node / Pi Network</button>
+        <button onclick="runTask(5)">Cập nhật WSL2</button>
+        <button onclick="runTask(6)">Cài đặt Docker Desktop</button>
+        <button onclick="runTask(7)">Mở Firewall - Inbound Rule</button>
+        <button onclick="runTask(8)">Chuyển mạng sang Private</button>
+        <button onclick="runTask(9)">Cập nhật Windows</button>
+        <button onclick="runTask(10)">Tùy chỉnh Windows</button>
+        <button onclick="runTask(11)">Dọn dẹp hệ thống Windows và ổ C</button>
+        <button onclick="logout()">Thoát</button>
+        <div id="progress">
+            <div id="progress-bar"></div>
+            <p id="progress-text">Progress: 0%</p>
+        </div>
+    </div>
+
+    <script>
+        function checkPassword() {
+            const pass = document.getElementById("password").value;
+            if (pass === "6868") {
+                document.getElementById("menu").classList.remove("hidden");
+                document.getElementById("password-container").classList.add("hidden"); 
+            } else {
+                alert("Wrong password! Please try again.");
+            }
+        }
+
+        function runTask(taskId) {
+            fetch(`http://localhost:3001/run-task/${taskId}`)
+                .then(response => response.text())
+                .then(data => {
+                    alert(data);
+                    updateProgress(100); // Hoàn thành
+                })
+                .catch(error => {
+                    alert("Error: " + error);
+                    updateProgress(0);
+                });
+            startProgressPolling(); // Bắt đầu polling tiến độ
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        function startProgressPolling() {
+            const interval = setInterval(() => {
+                fetch('http://localhost:3001/progress')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateProgress(data.progress);
+                        if (data.progress >= 100) {
+                            clearInterval(interval);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching progress:', error));
+            }, 1000); // Polling mỗi 1 giây
+        }
+
+        function updateProgress(percentage) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = `Progress: ${percentage}%`;
+        }
+    </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91ef76b30f58bf7f',t:'MTc0MTc0MjM2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>
