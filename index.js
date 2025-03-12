@@ -3,7 +3,9 @@ const { exec } = require('child_process');
 const https = require('https');
 const fs = require('fs');
 const app = express();
-const port = process.env.PORT || 3001; // Heroku sẽ gán port động
+
+// Sử dụng cổng từ Render, hoặc 3001 nếu không có
+const port = process.env.PORT || 3001;
 
 // Phục vụ các file tĩnh
 app.use(express.static('public'));
@@ -11,16 +13,16 @@ app.use(express.static('public'));
 // Lưu tiến độ
 let progress = 0;
 
-// Hàm tải Pi Network
+// Hàm tải Pi Network (chỉ tải file, không chạy .exe)
 async function installPiNetwork() {
-    const piInstaller = '/tmp/Pi_Network_Setup.exe'; // Thư mục tạm trên Heroku
+    const piInstaller = '/tmp/Pi_Network_Setup.exe'; // Thư mục tạm trên Render
     const url = 'https://downloads.minepi.com/Pi%20Network%20Setup%200.5.0.exe';
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(piInstaller);
         https.get(url, (response) => {
             response.pipe(file);
             file.on('finish', () => {
-                file.close(() => resolve('Tải Pi Network hoàn tất!'));
+                file.close(() => resolve('Tải Pi Network hoàn tất! (File đã tải về /tmp)'));
             });
         }).on('error', (err) => {
             reject(`Lỗi khi tải: ${err.message}`);
@@ -52,7 +54,7 @@ async function checkDocker() {
 app.get('/run-task/:taskId', async (req, res) => {
     const taskId = req.params.taskId;
     progress = 0;
-    res.send(`Bắt đầu nhiệm vụ ${taskId}`);
+    res.write(`Bắt đầu nhiệm vụ ${taskId}\n`); // Gửi phản hồi ban đầu
 
     let result;
     try {
@@ -70,10 +72,10 @@ app.get('/run-task/:taskId', async (req, res) => {
                 result = 'Task ID không hợp lệ';
         }
         progress = 100;
-        res.send(result); // Gửi kết quả sau khi hoàn tất
+        res.end(result); // Kết thúc phản hồi với kết quả
     } catch (error) {
         progress = 0;
-        res.status(500).send(`Lỗi: ${error}`);
+        res.status(500).end(`Lỗi: ${error}`); // Kết thúc với lỗi
     }
 });
 
@@ -88,6 +90,6 @@ setInterval(() => {
 }, 1000);
 
 // Khởi động server
-app.listen(port, () => {
-    console.log(`Server chạy tại http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server chạy tại http://0.0.0.0:${port}`);
 });
